@@ -5,25 +5,31 @@ import java.io.*;
 import java.nio.file.Paths;
 
 public class TodoList {
-    private ArrayList<String> list;
+    private ArrayList<String> tasks;
     private final String filePath = "src/main/java/rvt/todo.csv";
-    
-    public TodoList() {
-        this.list = new ArrayList<>();
-        loadFromFile();
 
+    public TodoList() {
+        this.tasks = new ArrayList<>();
+        this.loadFromFile();
+        
     }
 
-    // PRIVATE metodes: >
-
     private void loadFromFile() {
-        try (Scanner reader = new Scanner(Paths.get(filePath))) {
+        try(Scanner reader = new Scanner(Paths.get(filePath))) {
+
+            String line;
+            String[] splitedLine;
+
+            reader.nextLine();
 
             while (reader.hasNextLine()) {
-                list.add(reader.nextLine());
+
+                line = reader.nextLine();
+                splitedLine = line.split(",");
+
+                tasks.add(splitedLine[1]);
 
             }
-
 
         } catch (Exception e) {
             System.out.println(e.getMessage());
@@ -33,64 +39,63 @@ public class TodoList {
     }
 
     private int getLastId() {
-        int vertiba = 0;
-        try  (Scanner reader = new Scanner(Paths.get(filePath))) {
+        String lastLine;
+        String[] splitedLastLine;
 
-            reader.nextLine();
-            while (reader.hasNextLine()) {
-                vertiba++;
+        try (Scanner reader = new Scanner(Paths.get(filePath))) {
+
+            for (int i = 1; i <= this.tasks.size(); i++) {
                 reader.nextLine();
 
             }
 
+            lastLine = reader.nextLine();
+            splitedLastLine = lastLine.split(",");
+
+            return Integer.valueOf(splitedLastLine[0]); // Exception nostrādās te, kad mūsu ArrayList size būs 0, kā dēļ splitedLastLine[0] = id, kā dēļ šo nevarēs konvertēt par integeru
+
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            return 0;
 
         }
-
-        String x = list.get(vertiba);
-        String[] masivsX = x.split(",");
-
-        return Integer.valueOf(masivsX[0]);
 
     }
 
     private void updateFile() {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath))) {
-            String x;
-            String[] masivsX;
+            bw.write("id,task");
 
-            for (int i = 0; i < list.size(); i++) {
-                x = list.get(i);
-                if (i == 0) {
-                    bw.write(x);
-                    bw.newLine();
+            int i = 1;
+            for (String task: tasks) {
+                bw.newLine();
+                bw.write(i + "," + task);
 
-                } else {
-                    masivsX = x.split(",");
-
-                    bw.write(i + "," + masivsX[1]);
-                    if (i == list.size() - 1) break;
-                    bw.newLine();
-
-                }
+                i++;
 
             }
 
         } catch (Exception e) {
             System.out.println(e.getMessage());
+
         }
-        
     }
 
-    // PUBLIC metodes: >
-
     public void add(String task) {
-        this.list.add(task);
 
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(new File(filePath), true))) {
-            bw.newLine();
-            bw.write(getLastId() +1 + "," + task);
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath, true))) {
+
+            if (checkEventString(task)) {
+
+                bw.newLine();
+                bw.write((getLastId() + 1) + "," + task);
+
+                this.tasks.add(task);
+
+            } else {
+                System.out.println("(!) This task is invalid.");
+                System.out.println("(!) Your task must have only letters, digits, space and at least 3 symbols in it! >(");
+
+            }
 
         } catch (Exception e) {
             System.out.println(e.getMessage());
@@ -100,19 +105,47 @@ public class TodoList {
     }
 
     public void print() {
-        int i = 1;
-        for (String tasks: list) {
 
-            System.out.println(i+ ": " + tasks);
-            i++;
+        if (tasks.size() == 0) {
+            System.out.println("(!) There is no task on the list."); // Netika prasīts, pievienoju no sevīm
+
+        } else {
+            for(int i = 0; i < this.tasks.size(); i++) {
+            System.out.println(i + 1 + ": " + this.tasks.get(i));
+
+            }
 
         }
 
     }
 
     public void remove(int number) {
-        list.remove(number);
-        updateFile();
+
+        try {
+            if (tasks.size() == 0) {
+            System.out.println("(!) There is nothing to remove."); // Netika prasīts, pievienoju no sevīm
+
+            } else {
+                this.tasks.remove(number - 1);
+                this.updateFile();
+
+            }
+
+        } catch (Exception e) {
+            System.out.println("(!) There is no such id, or this is just an exception :)");
+
+        }
+        
+    }
+
+    public boolean checkEventString(String value) {
+        
+        if (value.length() < 3) {
+            return false;
+
+        }
+
+        return value.matches("^[A-Za-z0-9 ]+$");
 
     }
 
